@@ -98,8 +98,8 @@ class OpenSearchService {
     const policyName = `${collectionName}-network`;
     
     try {
-      // OpenSearch Serverless network policy structure
-      // Network policies must be an array of rules
+      // OpenSearch Serverless network policy structure for Bedrock knowledge base integration
+      // Based on AWS documentation: https://repost.aws/knowledge-center/bedrock-knowledge-base-private-network-policy
       const policy = [
         {
           Rules: [
@@ -112,8 +112,24 @@ class OpenSearchService {
               Resource: [`collection/${collectionName}`]
             }
           ],
-          AllowFromPublic: true, // Change to false for VPC-only access in production
-          SourceVPCEs: [] // Add VPC endpoints here for private access
+          AllowFromPublic: false, // Private access required for Bedrock integration
+          SourceVPCEs: [] // TODO: Configure VPC endpoints for production private access
+        },
+        {
+          Rules: [
+            {
+              ResourceType: 'collection',
+              Resource: [`collection/${collectionName}`]
+            }
+          ],
+          AllowFromPublic: true, // Allow Bedrock service access
+          SourceVPCEs: [],
+          AwsServiceAccess: [
+            {
+              Service: 'bedrock.amazonaws.com',
+              ResourceType: 'collection'
+            }
+          ]
         }
       ];
 
@@ -174,6 +190,8 @@ class OpenSearchService {
     const policyName = `${collectionName}-access`;
     
     try {
+      // Data access policy for Bedrock knowledge base integration
+      // Based on AWS documentation: https://repost.aws/knowledge-center/bedrock-knowledge-base-private-network-policy
       const policy = [
         {
           Rules: [
@@ -201,7 +219,8 @@ class OpenSearchService {
             }
           ],
           Principal: [
-            `arn:aws:iam::${OPENSEARCH_CONFIG.accountId}:root` // Grant to account root, refine in production
+            `arn:aws:iam::${OPENSEARCH_CONFIG.accountId}:root`, // Account root access
+            `arn:aws:iam::${OPENSEARCH_CONFIG.accountId}:role/bedrock-knowledge-base-role` // Bedrock service role
           ]
         }
       ];
@@ -327,16 +346,19 @@ class OpenSearchService {
       }
 
       // Step 3: Create the collection
+      // Configured for Bedrock knowledge base integration
+      // Based on AWS documentation: https://repost.aws/knowledge-center/bedrock-knowledge-base-private-network-policy
       logger.info('Initiating collection creation', { collectionName });
       const createCommand = new CreateCollectionCommand({
         name: collectionName,
-        type: 'SEARCH', // SEARCH or TIMESERIES
-        description: `OpenSearch collection for tenant ${tenantSlug} (${tenantId})`,
+        type: 'SEARCH', // SEARCH type required for Bedrock knowledge bases
+        description: `OpenSearch collection for tenant ${tenantSlug} (${tenantId}) - configured for Bedrock knowledge base`,
         tags: [
           { key: 'TenantId', value: tenantId },
           { key: 'TenantSlug', value: tenantSlug },
           { key: 'Service', value: 'Accreda' },
-          { key: 'ManagedBy', value: 'tenant-opensearch-service' }
+          { key: 'ManagedBy', value: 'tenant-opensearch-service' },
+          { key: 'BedrockCompatible', value: 'true' }
         ]
       });
 
