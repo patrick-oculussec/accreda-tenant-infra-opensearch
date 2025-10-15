@@ -1,41 +1,74 @@
 version: 0.2
 
+# AWS CodeBuild specification for Tenant OpenSearch Service
+# This buildspec builds a Docker image and pushes it to Amazon ECR
+# Optionally triggers ECS service update via imagedefinitions.json
+
+env:
+  variables:
+    # Docker image configuration
+    AWS_DEFAULT_REGION: us-east-1
+    AWS_ACCOUNT_ID: 625867133463
+    IMAGE_REPO_NAME: tenant-opensearch
+    IMAGE_TAG: latest
+    CONTAINER_NAME: tenant-opensearch
+
 phases:
   pre_build:
     commands:
-      - echo "Logging in to Amazon ECR..."
-      - aws --version
-      - export AWS_ACCOUNT_ID=625867133463
-      - export AWS_DEFAULT_REGION=us-east-1
-      - export IMAGE_REPO_NAME=tenant-opensearch
-      - export CONTAINER_NAME=tenant-opensearch
-      - echo "Environment variables:"
-      - echo "AWS_ACCOUNT_ID: $AWS_ACCOUNT_ID"
-      - echo "AWS_DEFAULT_REGION: $AWS_DEFAULT_REGION"
-      - echo "IMAGE_REPO_NAME: $IMAGE_REPO_NAME"
-      - echo "CONTAINER_NAME: $CONTAINER_NAME"
+      - echo "=========================================="
+      - echo "Pre-Build Phase - Tenant OpenSearch Service"
+      - echo "=========================================="
+      - echo "Build started at $(date)"
+      - echo "Commit SHA:"
+      - echo $CODEBUILD_RESOLVED_SOURCE_VERSION
+      - echo "Branch:"
+      - echo $CODEBUILD_WEBHOOK_HEAD_REF
+      - echo "Logging in to Amazon ECR Public..."
+      - aws ecr-public get-login-password --region us-east-1 | docker login --username AWS --password-stdin public.ecr.aws
+      - echo "Logging in to Amazon ECR Private..."
+      - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com
+      - echo "Checking if ECR repository exists..."
+      - aws ecr describe-repositories --repository-names $IMAGE_REPO_NAME --region $AWS_DEFAULT_REGION || aws ecr create-repository --repository-name $IMAGE_REPO_NAME --region $AWS_DEFAULT_REGION --image-scanning-configuration scanOnPush=true --encryption-configuration encryptionType=AES256 --tags Key=Project,Value=tenant-opensearch Key=ManagedBy,Value=codebuild
       - REPOSITORY_URI=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE_REPO_NAME
-      - echo "REPOSITORY_URI: $REPOSITORY_URI"
-      - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $REPOSITORY_URI
       - COMMIT_HASH=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
-      - export IMAGE_TAG=$COMMIT_HASH
-      - echo "Building image with tag $IMAGE_TAG"
+      - IMAGE_TAG_COMMIT=${COMMIT_HASH:=latest}
+      - echo "Repository URI = $REPOSITORY_URI"
+      - echo "Image tag (commit) = $IMAGE_TAG_COMMIT"
 
   build:
     commands:
+      - echo "=========================================="
+      - echo "Build Phase - Building Docker Image"
+      - echo "=========================================="
+      - echo "Build started at $(date)"
       - echo "Building Docker image..."
-      - docker build -t $IMAGE_REPO_NAME:latest .
-      - docker tag $IMAGE_REPO_NAME:latest $REPOSITORY_URI:latest
-      - docker tag $IMAGE_REPO_NAME:latest $REPOSITORY_URI:$IMAGE_TAG
+      - docker build -t $IMAGE_REPO_NAME:$IMAGE_TAG .
+      - docker tag $IMAGE_REPO_NAME:$IMAGE_TAG $REPOSITORY_URI:$IMAGE_TAG
+      - docker tag $IMAGE_REPO_NAME:$IMAGE_TAG $REPOSITORY_URI:$IMAGE_TAG_COMMIT
+      - docker tag $IMAGE_REPO_NAME:$IMAGE_TAG $REPOSITORY_URI:build-$CODEBUILD_BUILD_NUMBER
+      - echo "Docker image built and tagged successfully"
 
   post_build:
     commands:
+      - echo "=========================================="
+      - echo "Post-Build Phase - Pushing to ECR"
+      - echo "=========================================="
+      - echo "Post-build started at $(date)"
       - echo "Pushing Docker image to ECR..."
-      - docker push $REPOSITORY_URI:latest
       - docker push $REPOSITORY_URI:$IMAGE_TAG
-      - echo "Writing image definitions file for ECS deployment..."
-      - printf '[{"name":"%s","imageUri":"%s"}]' $CONTAINER_NAME $REPOSITORY_URI:$IMAGE_TAG > imagedefinitions.json
+      - docker push $REPOSITORY_URI:$IMAGE_TAG_COMMIT
+      - docker push $REPOSITORY_URI:build-$CODEBUILD_BUILD_NUMBER
+      - echo "Docker images pushed successfully"
+      - printf '[{"name":"%s","imageUri":"%s"}]' $CONTAINER_NAME $REPOSITORY_URI:$IMAGE_TAG_COMMIT > imagedefinitions.json
+      - echo "Created imagedefinitions.json for ECS deployment"
       - cat imagedefinitions.json
+      - IMAGE_DIGEST=$(aws ecr describe-images --repository-name $IMAGE_REPO_NAME --image-ids imageTag=$IMAGE_TAG_COMMIT --region $AWS_DEFAULT_REGION --query 'imageDetails[0].imageDigest' --output text)
+      - echo "Image digest:"
+      - echo $IMAGE_DIGEST
+      - echo "=========================================="
+      - echo "Build completed successfully at $(date)"
+      - echo "=========================================="
 
 artifacts:
   files:
@@ -43,4 +76,5 @@ artifacts:
 
 cache:
   paths:
-    - '/root/.npm/**/*'
+    - '/root/.docker/**/*'
+    - 'node_modules/**/*'
