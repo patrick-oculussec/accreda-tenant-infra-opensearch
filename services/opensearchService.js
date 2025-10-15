@@ -155,8 +155,7 @@ class OpenSearchService {
           errorName: error.name,
           errorCode: error.$metadata?.httpStatusCode,
           requestId: error.$metadata?.requestId,
-          stack: error.stack,
-          fullError: JSON.stringify(error, null, 2)
+          stack: error.stack
         });
         throw error;
       }
