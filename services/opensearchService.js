@@ -128,6 +128,13 @@ class OpenSearchService {
       if (error.name === 'ConflictException') {
         logger.info('Network policy already exists', { collectionName });
       } else {
+        logger.error('Failed to create network policy', {
+          collectionName,
+          policyName,
+          error: error.message,
+          errorName: error.name,
+          errorCode: error.$metadata?.httpStatusCode
+        });
         throw error;
       }
     }
@@ -190,6 +197,14 @@ class OpenSearchService {
       if (error.name === 'ConflictException') {
         logger.info('Data access policy already exists', { collectionName });
       } else {
+        logger.error('Failed to create data access policy', {
+          collectionName,
+          policyName,
+          tenantId,
+          error: error.message,
+          errorName: error.name,
+          errorCode: error.$metadata?.httpStatusCode
+        });
         throw error;
       }
     }
@@ -270,12 +285,17 @@ class OpenSearchService {
 
     try {
       // Step 1: Create encryption policy (required before collection)
+      logger.info('Creating encryption policy', { collectionName });
       await this.createEncryptionPolicy(collectionName);
+      logger.info('Encryption policy created successfully', { collectionName });
 
       // Step 2: Create network policy (required before collection)
+      logger.info('Creating network policy', { collectionName });
       await this.createNetworkPolicy(collectionName);
+      logger.info('Network policy created successfully', { collectionName });
 
       // Step 3: Create the collection
+      logger.info('Initiating collection creation', { collectionName });
       const createCommand = new CreateCollectionCommand({
         name: collectionName,
         type: 'SEARCH', // SEARCH or TIMESERIES
@@ -295,9 +315,12 @@ class OpenSearchService {
       });
 
       // Step 4: Create data access policy
+      logger.info('Creating data access policy', { collectionName });
       await this.createDataAccessPolicy(collectionName, tenantId);
+      logger.info('Data access policy created successfully', { collectionName });
 
       // Step 5: Wait for collection to become active
+      logger.info('Waiting for collection to become active', { collectionName });
       const collection = await this.waitForCollectionActive(collectionName);
 
       logger.info('OpenSearch collection created successfully', {
@@ -319,6 +342,8 @@ class OpenSearchService {
         tenantSlug,
         collectionName,
         error: error.message,
+        errorName: error.name,
+        errorCode: error.$metadata?.httpStatusCode,
         stack: error.stack
       });
       throw error;
