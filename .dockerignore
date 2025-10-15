@@ -1,0 +1,48 @@
+# Node modules (will be installed in container)
+node_modules/
+npm-debug.log
+
+# Git
+.git/
+.gitignore
+
+# Documentation
+README.md
+*.md
+
+# Agent info (not needed in container)
+agent-info/
+
+# Environment files (use ECS environment variables instead)
+.env
+.env.*
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Test files
+test/
+tests/
+*.test.js
+*.spec.js
+
+# CI/CD files (not needed in container)
+buildspec.yml
+.github/
+
+# Logs
+logs/
+*.log
+
+# Temporary files
+tmp/
+temp/
+

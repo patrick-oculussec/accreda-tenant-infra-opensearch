@@ -1,0 +1,40 @@
+version: 0.2
+
+# AWS CodeBuild buildspec for building and deploying the Tenant OpenSearch Service
+# This builds a Docker image and pushes it to Amazon ECR for ECS deployment
+
+phases:
+  pre_build:
+    commands:
+      - echo "Logging in to Amazon ECR..."
+      - aws --version
+      - REPOSITORY_URI=${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/${IMAGE_REPO_NAME}
+      - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $REPOSITORY_URI
+      - COMMIT_HASH=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
+      - IMAGE_TAG=${COMMIT_HASH:=latest}
+      - echo "Building image with tag $IMAGE_TAG"
+
+  build:
+    commands:
+      - echo "Building Docker image..."
+      - docker build -t $IMAGE_REPO_NAME:latest .
+      - docker tag $IMAGE_REPO_NAME:latest $REPOSITORY_URI:latest
+      - docker tag $IMAGE_REPO_NAME:latest $REPOSITORY_URI:$IMAGE_TAG
+
+  post_build:
+    commands:
+      - echo "Pushing Docker image to ECR..."
+      - docker push $REPOSITORY_URI:latest
+      - docker push $REPOSITORY_URI:$IMAGE_TAG
+      - echo "Writing image definitions file for ECS deployment..."
+      - printf '[{"name":"%s","imageUri":"%s"}]' $CONTAINER_NAME $REPOSITORY_URI:$IMAGE_TAG > imagedefinitions.json
+      - cat imagedefinitions.json
+
+artifacts:
+  files:
+    - imagedefinitions.json
+
+cache:
+  paths:
+    - '/root/.npm/**/*'
+
