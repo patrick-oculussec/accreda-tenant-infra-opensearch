@@ -1,14 +1,10 @@
 version: 0.2
 
-# AWS CodeBuild buildspec for building and deploying the Tenant OpenSearch Service
-# This builds a Docker image and pushes it to Amazon ECR for ECS deployment
-
 phases:
   pre_build:
     commands:
       - echo "Logging in to Amazon ECR..."
       - aws --version
-      # Set default values if environment variables are not provided
       - export AWS_ACCOUNT_ID=${AWS_ACCOUNT_ID:-625867133463}
       - export AWS_DEFAULT_REGION=${AWS_DEFAULT_REGION:-us-east-1}
       - export IMAGE_REPO_NAME=${IMAGE_REPO_NAME:-tenant-opensearch}
