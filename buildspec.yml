@@ -5,22 +5,10 @@ phases:
     commands:
       - echo "Logging in to Amazon ECR..."
       - aws --version
-      - |
-        if [ -z "$AWS_ACCOUNT_ID" ]; then
-          export AWS_ACCOUNT_ID=625867133463
-        fi
-      - |
-        if [ -z "$AWS_DEFAULT_REGION" ]; then
-          export AWS_DEFAULT_REGION=us-east-1
-        fi
-      - |
-        if [ -z "$IMAGE_REPO_NAME" ]; then
-          export IMAGE_REPO_NAME=tenant-opensearch
-        fi
-      - |
-        if [ -z "$CONTAINER_NAME" ]; then
-          export CONTAINER_NAME=tenant-opensearch
-        fi
+      - export AWS_ACCOUNT_ID=625867133463
+      - export AWS_DEFAULT_REGION=us-east-1
+      - export IMAGE_REPO_NAME=tenant-opensearch
+      - export CONTAINER_NAME=tenant-opensearch
       - echo "Environment variables:"
       - echo "AWS_ACCOUNT_ID: $AWS_ACCOUNT_ID"
       - echo "AWS_DEFAULT_REGION: $AWS_DEFAULT_REGION"
@@ -30,12 +18,7 @@ phases:
       - echo "REPOSITORY_URI: $REPOSITORY_URI"
       - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $REPOSITORY_URI
       - COMMIT_HASH=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
-      - |
-        if [ -z "$COMMIT_HASH" ]; then
-          export IMAGE_TAG=latest
-        else
-          export IMAGE_TAG=$COMMIT_HASH
-        fi
+      - export IMAGE_TAG=$COMMIT_HASH
       - echo "Building image with tag $IMAGE_TAG"
 
   build:
@@ -61,4 +44,3 @@ artifacts:
 cache:
   paths:
     - '/root/.npm/**/*'
-
