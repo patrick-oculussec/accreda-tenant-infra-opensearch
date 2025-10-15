@@ -98,8 +98,8 @@ class OpenSearchService {
     const policyName = `${collectionName}-network`;
     
     try {
-      // OpenSearch Serverless network policy structure for Bedrock knowledge base integration
-      // Based on AWS documentation: https://repost.aws/knowledge-center/bedrock-knowledge-base-private-network-policy
+      // OpenSearch Serverless network policy structure
+      // Simplified structure that works with OpenSearch Serverless schema
       const policy = [
         {
           Rules: [
@@ -112,24 +112,8 @@ class OpenSearchService {
               Resource: [`collection/${collectionName}`]
             }
           ],
-          AllowFromPublic: false, // Private access required for Bedrock integration
-          SourceVPCEs: [] // TODO: Configure VPC endpoints for production private access
-        },
-        {
-          Rules: [
-            {
-              ResourceType: 'collection',
-              Resource: [`collection/${collectionName}`]
-            }
-          ],
-          AllowFromPublic: true, // Allow Bedrock service access
-          SourceVPCEs: [],
-          AwsServiceAccess: [
-            {
-              Service: 'bedrock.amazonaws.com',
-              ResourceType: 'collection'
-            }
-          ]
+          AllowFromPublic: true, // Required by schema - will be restricted by data access policy
+          SourceVPCEs: [] // Empty array is allowed when AllowFromPublic is true
         }
       ];
 
@@ -191,7 +175,7 @@ class OpenSearchService {
     
     try {
       // Data access policy for Bedrock knowledge base integration
-      // Based on AWS documentation: https://repost.aws/knowledge-center/bedrock-knowledge-base-private-network-policy
+      // Security is controlled by data access policy, not network policy
       const policy = [
         {
           Rules: [
@@ -219,8 +203,9 @@ class OpenSearchService {
             }
           ],
           Principal: [
-            `arn:aws:iam::${OPENSEARCH_CONFIG.accountId}:root`, // Account root access
-            `arn:aws:iam::${OPENSEARCH_CONFIG.accountId}:role/bedrock-knowledge-base-role` // Bedrock service role
+            `arn:aws:iam::${OPENSEARCH_CONFIG.accountId}:root` // Account root access for now
+            // TODO: Add specific Bedrock service role when available
+            // `arn:aws:iam::${OPENSEARCH_CONFIG.accountId}:role/bedrock-knowledge-base-role`
           ]
         }
       ];
