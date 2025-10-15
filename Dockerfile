@@ -16,7 +16,7 @@ COPY package*.json ./
 
 # Install production dependencies only
 # Clean npm cache to reduce image size
-RUN npm ci --only=production && \
+RUN npm install --omit=dev && \
     npm cache clean --force
 
 # Copy application source code

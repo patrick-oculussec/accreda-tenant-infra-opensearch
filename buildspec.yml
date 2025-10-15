@@ -9,7 +9,7 @@ env:
     # Docker image configuration
     AWS_DEFAULT_REGION: us-east-1
     AWS_ACCOUNT_ID: 625867133463
-    IMAGE_REPO_NAME: tenant-opensearch
+    IMAGE_REPO_NAME: accreda-dev-tenant-infra-opensearch
     IMAGE_TAG: latest
     CONTAINER_NAME: tenant-opensearch
 
