@@ -98,6 +98,8 @@ class OpenSearchService {
     try {
       const policyName = `${collectionName}-network`;
       
+      // OpenSearch Serverless network policy structure
+      // Network policies must be an array of rules
       const policy = [
         {
           Rules: [
@@ -115,6 +117,12 @@ class OpenSearchService {
         }
       ];
 
+      logger.info('Creating network policy with structure', {
+        collectionName,
+        policyName,
+        policy: JSON.stringify(policy, null, 2)
+      });
+
       const command = new CreateSecurityPolicyCommand({
         name: policyName,
         type: 'network',
@@ -122,7 +130,19 @@ class OpenSearchService {
         description: `Network policy for tenant collection ${collectionName}`
       });
 
-      await this.client.send(command);
+      logger.info('Sending CreateSecurityPolicyCommand', {
+        collectionName,
+        policyName,
+        commandType: 'network'
+      });
+
+      const response = await this.client.send(command);
+      
+      logger.info('Network policy command response', {
+        collectionName,
+        policyName,
+        response: response
+      });
       logger.info('Created network policy', { policyName, collectionName });
     } catch (error) {
       if (error.name === 'ConflictException') {
@@ -133,7 +153,11 @@ class OpenSearchService {
           policyName,
           error: error.message,
           errorName: error.name,
-          errorCode: error.$metadata?.httpStatusCode
+          errorCode: error.$metadata?.httpStatusCode,
+          requestId: error.$metadata?.requestId,
+          policy: JSON.stringify(policy, null, 2),
+          stack: error.stack,
+          fullError: JSON.stringify(error, null, 2)
         });
         throw error;
       }
@@ -291,8 +315,18 @@ class OpenSearchService {
 
       // Step 2: Create network policy (required before collection)
       logger.info('Creating network policy', { collectionName });
-      await this.createNetworkPolicy(collectionName);
-      logger.info('Network policy created successfully', { collectionName });
+      try {
+        await this.createNetworkPolicy(collectionName);
+        logger.info('Network policy created successfully', { collectionName });
+      } catch (networkError) {
+        logger.error('Network policy creation failed in main flow', {
+          collectionName,
+          error: networkError.message,
+          errorName: networkError.name,
+          errorCode: networkError.$metadata?.httpStatusCode
+        });
+        throw networkError;
+      }
 
       // Step 3: Create the collection
       logger.info('Initiating collection creation', { collectionName });
