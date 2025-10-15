@@ -26,8 +26,12 @@ const logger = winston.createLogger({
         winston.format.colorize(),
         winston.format.printf(({ level, message, timestamp, ...metadata }) => {
           let msg = `${timestamp} [${level}]: ${message}`;
-          if (Object.keys(metadata).length > 0 && metadata.service !== 'tenant-opensearch') {
-            msg += ` ${JSON.stringify(metadata)}`;
+          if (Object.keys(metadata).length > 0) {
+            // Remove service from metadata to avoid duplication since it's in defaultMeta
+            const { service, ...logMetadata } = metadata;
+            if (Object.keys(logMetadata).length > 0) {
+              msg += ` ${JSON.stringify(logMetadata)}`;
+            }
           }
           return msg;
         })
