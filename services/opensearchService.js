@@ -95,9 +95,9 @@ class OpenSearchService {
    * @returns {Promise<void>}
    */
   async createNetworkPolicy(collectionName) {
+    const policyName = `${collectionName}-network`;
+    
     try {
-      const policyName = `${collectionName}-network`;
-      
       // OpenSearch Serverless network policy structure
       // Network policies must be an array of rules
       const policy = [
@@ -155,7 +155,6 @@ class OpenSearchService {
           errorName: error.name,
           errorCode: error.$metadata?.httpStatusCode,
           requestId: error.$metadata?.requestId,
-          policy: JSON.stringify(policy, null, 2),
           stack: error.stack,
           fullError: JSON.stringify(error, null, 2)
         });
@@ -173,9 +172,9 @@ class OpenSearchService {
    * @returns {Promise<void>}
    */
   async createDataAccessPolicy(collectionName, tenantId) {
+    const policyName = `${collectionName}-access`;
+    
     try {
-      const policyName = `${collectionName}-access`;
-      
       const policy = [
         {
           Rules: [
