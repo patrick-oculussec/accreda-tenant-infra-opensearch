@@ -11,7 +11,7 @@ env:
     AWS_ACCOUNT_ID: 625867133463
     IMAGE_REPO_NAME: accreda-dev-tenant-infra-opensearch
     IMAGE_TAG: latest
-    CONTAINER_NAME: tenant-opensearch
+    CONTAINER_NAME: accreda-dev-tenant-infra-opensearch
 
 phases:
   pre_build:
