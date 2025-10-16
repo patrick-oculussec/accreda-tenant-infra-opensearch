@@ -206,9 +206,9 @@ class OpenSearchService {
           ],
           Principal: [
             // Allow Bedrock service to access the collection for knowledge base integration
-            `arn:aws:iam::${OPENSEARCH_CONFIG.accountId}:root`,
-            // Allow the tenant-specific service role (when implemented)
-            `arn:aws:iam::${OPENSEARCH_CONFIG.accountId}:role/accreda-tenant-${tenantId}-opensearch-role`
+            `arn:aws:iam::${OPENSEARCH_CONFIG.accountId}:root`
+            // Note: Tenant-specific roles can be added later when they are actually created
+            // For now, using account root provides necessary access for Bedrock integration
           ]
         }
       ];
