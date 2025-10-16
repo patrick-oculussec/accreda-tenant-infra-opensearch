@@ -339,8 +339,8 @@ class OpenSearchService {
       logger.info('Initiating collection creation', { collectionName });
       const createCommand = new CreateCollectionCommand({
         name: collectionName,
-        type: 'SEARCH', // SEARCH type required for Bedrock knowledge bases
-        description: `OpenSearch collection for tenant ${tenantSlug} (${tenantId}) - configured for Bedrock knowledge base`,
+        type: 'VECTORSEARCH', // VECTORSEARCH type for vector search capabilities
+        description: `OpenSearch collection for tenant ${tenantSlug} (${tenantId}) - configured for vector search`,
         tags: [
           { key: 'TenantId', value: tenantId },
           { key: 'TenantSlug', value: tenantSlug },
