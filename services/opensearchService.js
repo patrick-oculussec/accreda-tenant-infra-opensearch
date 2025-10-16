@@ -99,7 +99,8 @@ class OpenSearchService {
     
     try {
       // OpenSearch Serverless network policy structure
-      // Simplified structure that works with OpenSearch Serverless schema
+      // For SaaS applications, we use public access with data access policies for security
+      // This allows Bedrock and other AWS services to access the collection
       const policy = [
         {
           Rules: [
@@ -112,8 +113,9 @@ class OpenSearchService {
               Resource: [`collection/${collectionName}`]
             }
           ],
-          AllowFromPublic: true, // Required by schema - will be restricted by data access policy
-          SourceVPCEs: [] // Empty array is allowed when AllowFromPublic is true
+          AllowFromPublic: true
+          // Note: When AllowFromPublic is true, we cannot specify SourceVPCEs or SourceServices
+          // Security is controlled by data access policies instead
         }
       ];
 
@@ -175,7 +177,7 @@ class OpenSearchService {
     
     try {
       // Data access policy for Bedrock knowledge base integration
-      // Security is controlled by data access policy, not network policy
+      // Security is controlled by data access policy since network policy allows public access
       const policy = [
         {
           Rules: [
@@ -203,9 +205,10 @@ class OpenSearchService {
             }
           ],
           Principal: [
-            `arn:aws:iam::${OPENSEARCH_CONFIG.accountId}:root` // Account root access for now
-            // TODO: Add specific Bedrock service role when available
-            // `arn:aws:iam::${OPENSEARCH_CONFIG.accountId}:role/bedrock-knowledge-base-role`
+            // Allow Bedrock service to access the collection for knowledge base integration
+            `arn:aws:iam::${OPENSEARCH_CONFIG.accountId}:root`,
+            // Allow the tenant-specific service role (when implemented)
+            `arn:aws:iam::${OPENSEARCH_CONFIG.accountId}:role/accreda-tenant-${tenantId}-opensearch-role`
           ]
         }
       ];
