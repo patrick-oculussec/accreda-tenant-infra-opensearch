@@ -208,7 +208,9 @@ class OpenSearchService {
             // Allow Bedrock service to access the collection for knowledge base integration
             `arn:aws:iam::${OPENSEARCH_CONFIG.accountId}:root`,
             // Allow the tenant infrastructure service to create indexes and manage data
-            'arn:aws:iam::625867133463:role/tenant-infra-build-task-roole'
+            'arn:aws:iam::625867133463:role/tenant-infra-build-task-roole',
+            // Allow the tenant data store service to create indexes on collections
+            'arn:aws:iam::625867133463:role/tenant-data-store-task-role'
           ]
         }
       ];
